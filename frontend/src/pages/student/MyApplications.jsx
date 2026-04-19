@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyApplications } from "../../api/application.api";
-import { useAuth } from "../../context/auth.context";
+import Navbar from "../../components/Navbar";
 
-const statusColors = {
-  applied:     { bg: "#dbeafe", color: "#1e40af" },
-  shortlisted: { bg: "#fef9c3", color: "#854d0e" },
-  interview:   { bg: "#ede9fe", color: "#5b21b6" },
-  selected:    { bg: "#dcfce7", color: "#166534" },
-  rejected:    { bg: "#fee2e2", color: "#991b1b" },
+const statusConfig = {
+  applied:     { bg: "#eff6ff", color: "#1d4ed8", label: "Applied" },
+  shortlisted: { bg: "#fefce8", color: "#a16207", label: "Shortlisted" },
+  interview:   { bg: "#f5f3ff", color: "#6d28d9", label: "Interview" },
+  selected:    { bg: "#f0fdf4", color: "#15803d", label: "Selected ✓" },
+  rejected:    { bg: "#fef2f2", color: "#dc2626", label: "Rejected" },
 };
 
 const MyApplications = () => {
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,50 +23,73 @@ const MyApplications = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleLogout = () => { logout(); navigate("/login"); };
+  const counts = {
+    total: applications.length,
+    selected: applications.filter(a => a.status === "selected").length,
+    active: applications.filter(a => !["selected", "rejected"].includes(a.status)).length,
+  };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.navbar}>
-        <span style={styles.brand}>Placement Tracker</span>
-        <div style={styles.navlinks}>
-          <button style={styles.navbtn} onClick={() => navigate("/student/drives")}>Browse Drives</button>
-          <button style={styles.navbtn} onClick={handleLogout}>Logout</button>
+    <div style={s.page}>
+      <Navbar />
+      <div style={s.container}>
+        <div style={s.pageHeader}>
+          <div>
+            <h1 style={s.heading}>My Applications</h1>
+            <p style={s.sub}>Track your placement journey</p>
+          </div>
+          <div style={s.statsRow}>
+            {[
+              { num: counts.total, label: "Applied" },
+              { num: counts.active, label: "In Progress" },
+              { num: counts.selected, label: "Selected" },
+            ].map((st) => (
+              <div key={st.label} style={s.stat}>
+                <span style={{ ...s.statNum, ...(st.label === "Selected" && st.num > 0 ? { color: "#15803d" } : {}) }}>{st.num}</span>
+                <span style={s.statLabel}>{st.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-
-      <div style={styles.container}>
-        <h2 style={styles.heading}>My Applications</h2>
-        <p style={styles.sub}>Tracking {applications.length} application{applications.length !== 1 ? "s" : ""}</p>
 
         {loading ? (
-          <p>Loading...</p>
+          <div style={s.loadingBox}>Loading your applications...</div>
         ) : applications.length === 0 ? (
-          <div style={styles.empty}>
-            <p>You haven't applied to any drives yet.</p>
-            <button style={styles.applyBtn} onClick={() => navigate("/student/drives")}>Browse Drives</button>
+          <div style={s.emptyBox}>
+            <p style={s.emptyTitle}>No applications yet</p>
+            <p style={s.emptySub}>Browse available drives and apply to get started</p>
+            <button style={s.browseBtn} onClick={() => navigate("/student/drives")}>Browse Drives →</button>
           </div>
         ) : (
-          <div style={styles.list}>
+          <div style={s.list}>
             {applications.map((app) => {
-              const sc = statusColors[app.status] || statusColors.applied;
+              const sc = statusConfig[app.status] || statusConfig.applied;
               return (
-                <div key={app._id} style={styles.card}>
-                  <div style={styles.cardLeft}>
-                    <h3 style={styles.company}>{app.drive?.companyName}</h3>
-                    <p style={styles.role}>{app.drive?.jobRole}</p>
-                    <div style={styles.meta}>
-                      <span>CTC: ₹{app.drive?.ctc?.toLocaleString()}</span>
-                      <span>📍 {app.drive?.location}</span>
-                      <span>Deadline: {new Date(app.drive?.deadline).toLocaleDateString()}</span>
+                <div key={app._id} style={s.card}>
+                  <div style={s.cardLeft}>
+                    <div style={s.companyLogo}>{app.drive?.companyName?.charAt(0)}</div>
+                    <div style={s.cardInfo}>
+                      <div style={s.cardTop}>
+                        <h3 style={s.company}>{app.drive?.companyName}</h3>
+                        <span style={{ ...s.statusBadge, background: sc.bg, color: sc.color }}>{sc.label}</span>
+                      </div>
+                      <p style={s.role}>{app.drive?.jobRole}</p>
+                      <div style={s.metaRow}>
+                        <span style={s.metaItem}>₹{((app.drive?.ctc || 0) / 100000).toFixed(1)} LPA</span>
+                        <span style={s.dot}>·</span>
+                        <span style={s.metaItem}>📍 {app.drive?.location}</span>
+                        <span style={s.dot}>·</span>
+                        <span style={s.metaItem}>Deadline: {new Date(app.drive?.deadline).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                      </div>
                     </div>
-                    <p style={styles.round}>Current Round: <strong>{app.currentRound}</strong></p>
-                    <p style={styles.date}>Applied on: {new Date(app.createdAt).toLocaleDateString()}</p>
                   </div>
-                  <div style={styles.cardRight}>
-                    <span style={{ ...styles.statusBadge, background: sc.bg, color: sc.color }}>
-                      {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                    </span>
+
+                  <div style={s.cardRight}>
+                    <div style={s.roundBox}>
+                      <span style={s.roundLabel}>Current Round</span>
+                      <span style={s.roundVal}>{app.currentRound}</span>
+                    </div>
+                    <span style={s.appliedDate}>Applied {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
                   </div>
                 </div>
               );
@@ -79,27 +101,38 @@ const MyApplications = () => {
   );
 };
 
-const styles = {
-  page: { minHeight: "100vh", background: "#f5f7fa" },
-  navbar: { background: "#1e40af", padding: "1rem 2rem", display: "flex", justifyContent: "space-between", alignItems: "center" },
-  brand: { color: "#fff", fontWeight: "600", fontSize: "18px" },
-  navlinks: { display: "flex", gap: "12px" },
-  navbtn: { background: "transparent", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", padding: "6px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "14px" },
-  container: { maxWidth: "900px", margin: "0 auto", padding: "2rem 1rem" },
-  heading: { fontSize: "24px", fontWeight: "600", margin: "0 0 4px" },
-  sub: { color: "#666", fontSize: "14px", margin: "0 0 2rem" },
-  list: { display: "flex", flexDirection: "column", gap: "16px" },
-  card: { background: "#fff", borderRadius: "12px", padding: "1.5rem", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
-  cardLeft: { display: "flex", flexDirection: "column", gap: "6px" },
-  cardRight: { flexShrink: 0, marginLeft: "1rem" },
-  company: { margin: 0, fontSize: "18px", fontWeight: "600" },
-  role: { margin: 0, color: "#2563eb", fontWeight: "500", fontSize: "15px" },
-  meta: { display: "flex", gap: "16px", fontSize: "13px", color: "#555", flexWrap: "wrap" },
-  round: { margin: 0, fontSize: "13px", color: "#444" },
-  date: { margin: 0, fontSize: "12px", color: "#999" },
-  statusBadge: { padding: "6px 16px", borderRadius: "20px", fontWeight: "500", fontSize: "13px" },
-  empty: { textAlign: "center", padding: "3rem", color: "#666" },
-  applyBtn: { marginTop: "1rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "14px", cursor: "pointer" },
+const s = {
+  page: { minHeight: "100vh", background: "#f8fafc" },
+  container: { maxWidth: "1000px", margin: "0 auto", padding: "2rem 1.5rem" },
+  pageHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" },
+  heading: { fontSize: "26px", fontWeight: "700", color: "#0f172a", margin: "0 0 6px" },
+  sub: { fontSize: "14px", color: "#64748b", margin: 0 },
+  statsRow: { display: "flex", gap: "12px" },
+  stat: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "12px 20px", textAlign: "center", minWidth: "90px" },
+  statNum: { display: "block", fontSize: "24px", fontWeight: "700", color: "#1e40af" },
+  statLabel: { display: "block", fontSize: "12px", color: "#94a3b8", marginTop: "2px" },
+  loadingBox: { textAlign: "center", padding: "4rem", color: "#94a3b8" },
+  emptyBox: { textAlign: "center", padding: "4rem", background: "#fff", borderRadius: "16px", border: "1px solid #e2e8f0" },
+  emptyTitle: { fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "8px" },
+  emptySub: { fontSize: "14px", color: "#64748b", marginBottom: "1.5rem" },
+  browseBtn: { padding: "10px 24px", borderRadius: "10px", background: "linear-gradient(135deg, #1e40af, #2563eb)", color: "#fff", border: "none", fontSize: "14px", fontWeight: "600", cursor: "pointer" },
+  list: { display: "flex", flexDirection: "column", gap: "14px" },
+  card: { background: "#fff", borderRadius: "16px", padding: "1.25rem 1.5rem", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" },
+  cardLeft: { display: "flex", alignItems: "center", gap: "16px", flex: 1 },
+  companyLogo: { width: "48px", height: "48px", borderRadius: "12px", background: "linear-gradient(135deg, #eff6ff, #dbeafe)", color: "#1e40af", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", fontWeight: "800", flexShrink: 0 },
+  cardInfo: { flex: 1 },
+  cardTop: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" },
+  company: { margin: 0, fontSize: "16px", fontWeight: "700", color: "#0f172a" },
+  statusBadge: { padding: "3px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" },
+  role: { margin: "0 0 8px", fontSize: "13px", color: "#64748b" },
+  metaRow: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" },
+  metaItem: { fontSize: "13px", color: "#64748b" },
+  dot: { color: "#cbd5e1" },
+  cardRight: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 },
+  roundBox: { background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "8px 14px", textAlign: "right" },
+  roundLabel: { display: "block", fontSize: "11px", color: "#94a3b8", fontWeight: "500", marginBottom: "2px" },
+  roundVal: { display: "block", fontSize: "13px", fontWeight: "600", color: "#0f172a" },
+  appliedDate: { fontSize: "12px", color: "#94a3b8" },
 };
 
 export default MyApplications;
