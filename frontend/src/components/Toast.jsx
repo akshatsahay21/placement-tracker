@@ -17,7 +17,7 @@ const Toast = () => {
   useEffect(() => {
     if (!user || user.role !== "student") return;
 
-    const socket = io("http://localhost:5000");
+    const socket = io(import.meta.env.VITE_API_BASE || "http://localhost:5000");
     socket.emit("join", user._id);
 
     socket.on("statusUpdate", (data) => {
