@@ -8,6 +8,7 @@ const studentLinks = [
 
 const tpoLinks = [
   { label: "Dashboard", path: "/tpo/dashboard" },
+  { label: "Analytics", path: "/tpo/analytics" },
   { label: "New Drive", path: "/tpo/drives" },
 ];
 

@@ -4,6 +4,8 @@ import { getAllDrives } from "../../api/drive.api";
 import { applyToDrive } from "../../api/application.api";
 import { useAuth } from "../../context/auth.context";
 import Navbar from "../../components/Navbar";
+import ResumeMatch from "../../components/ResumeMatch";
+import { getMyApplications } from "../../api/application.api";
 
 const DriveList = () => {
   const { user } = useAuth();
@@ -12,13 +14,24 @@ const DriveList = () => {
   const [loading, setLoading] = useState(true);
   const [applyingId, setApplyingId] = useState(null);
   const [messages, setMessages] = useState({});
+  const [matchDrive, setMatchDrive] = useState(null);
 
   useEffect(() => {
-    getAllDrives()
-      .then((res) => setDrives(res.data))
-      .catch(() => setDrives([]))
-      .finally(() => setLoading(false));
-  }, []);
+  getAllDrives()
+    .then((res) => setDrives(res.data))
+    .catch(() => setDrives([]))
+    .finally(() => setLoading(false));
+
+  getMyApplications()
+    .then((res) => {
+      const applied = {};
+      res.data.forEach((app) => {
+        applied[app.drive._id] = { type: "success", text: "Already applied" };
+      });
+      setMessages(applied);
+    })
+    .catch(() => {});
+}, []);
 
   const handleApply = async (driveId) => {
     setApplyingId(driveId);
@@ -111,19 +124,29 @@ const DriveList = () => {
                     <div style={s.ineligibleMsg}>Your CGPA doesn't meet the requirement</div>
                   )}
 
-                  <button
-                    style={{ ...s.applyBtn, ...((!eligible || msg?.type === "success") ? s.applyBtnDisabled : {}) }}
-                    onClick={() => handleApply(drive._id)}
-                    disabled={applyingId === drive._id || !eligible || msg?.type === "success"}
-                  >
-                    {applyingId === drive._id ? "Applying..." : msg?.type === "success" ? "Applied ✓" : !eligible ? "Not Eligible" : "Apply Now →"}
-                  </button>
+                  <div style={s.btnRow}>
+                    <button
+                      style={s.matchBtn}
+                      onClick={() => setMatchDrive(drive)}
+                    >
+                      🤖 AI Match
+                    </button>
+                    <button
+                      style={{ ...s.applyBtn, ...((!eligible || msg?.type === "success") ? s.applyBtnDisabled : {}) }}
+                      onClick={() => handleApply(drive._id)}
+                      disabled={applyingId === drive._id || !eligible || msg?.type === "success"}
+                    >
+                      {applyingId === drive._id ? "Applying..." : msg?.type === "success" ? "Applied ✓" : !eligible ? "Not Eligible" : "Apply Now →"}
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {matchDrive && <ResumeMatch drive={matchDrive} onClose={() => setMatchDrive(null)} />}
     </div>
   );
 };
@@ -160,7 +183,9 @@ const s = {
   successMsg: { background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", padding: "8px 12px", borderRadius: "8px", fontSize: "13px", fontWeight: "500" },
   errorMsg: { background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", padding: "8px 12px", borderRadius: "8px", fontSize: "13px" },
   ineligibleMsg: { background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa", padding: "8px 12px", borderRadius: "8px", fontSize: "13px" },
-  applyBtn: { padding: "11px", borderRadius: "10px", background: "linear-gradient(135deg, #1e40af, #2563eb)", color: "#fff", border: "none", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginTop: "auto" },
+  btnRow: { display: "flex", gap: "10px", marginTop: "auto" },
+  matchBtn: { flex: "0 0 auto", padding: "11px 16px", borderRadius: "10px", background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
+  applyBtn: { flex: 1, padding: "11px", borderRadius: "10px", background: "linear-gradient(135deg, #1e40af, #2563eb)", color: "#fff", border: "none", fontSize: "14px", fontWeight: "600", cursor: "pointer" },
   applyBtnDisabled: { background: "#e2e8f0", color: "#94a3b8", cursor: "not-allowed" },
 };
 
