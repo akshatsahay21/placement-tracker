@@ -9,7 +9,7 @@
 
 ### An AI-Powered Campus Placement Management Platform
 
-**[🚀 Live Demo](https://placement-tracker-flame.vercel.app)** · **[📦 Backend API](https://placement-tracker-api-jokf.onrender.com)**
+**[🚀 Live Demo](https://placement-tracker-flame.vercel.app)** 
 
 > Built with MERN Stack · AI Resume Matching · Real-Time Notifications · Analytics Dashboard
 
@@ -301,7 +301,6 @@ Render is optimized for persistent Node.js servers (required for Socket.IO). Ver
 ## 👨‍💻 Author
 
 **Akshat Sahay**
-BTech CSE · 6th Semester
 
 [![GitHub](https://img.shields.io/badge/GitHub-akshatsahay21-black?style=flat&logo=github)](https://github.com/akshatsahay21)
 
